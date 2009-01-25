@@ -347,7 +347,7 @@ class NNTPSession
 
   # Sends a single-line response to the client
   def putline(line)
-    @socket.puts(line.chomp)
+    @socket.write("#{line.chomp}\r\n")
   end
 
   # Sends a multi-line response (for example an article body)
