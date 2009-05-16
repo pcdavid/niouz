@@ -10,6 +10,19 @@
 $:.unshift File.join(File.dirname(__FILE__), %w[.. lib])
 
 require 'niouz/server'
+require 'gserver'
+
+class NNTPServer < GServer
+  attr_accessor :store
+
+  def initialize(port = 119, host = GServer::DEFAULT_HOST)
+    super(port, host, Float::MAX, $stderr, true)
+  end
+
+  def serve(sock)
+    NNTPSession.new(sock, @store).serve
+  end
+end
 
 if ARGV.length != 1
   puts "Usage: #{$0} storage_dir"
@@ -19,15 +32,10 @@ else
     puts "Directory #{ARGV[0]} must exist and be executable/traversable."
     exit 2
   end
-  require 'webrick/server'
-  
-  store = Storage.new(ARGV[0])
-  server = WEBrick::GenericServer.new(:Port => 119)
-  trap("INT") { server.shutdown }
-  File.open("pid", "w") { |f| f.puts($$); }
-  begin
-    server.start { |sock| NNTPSession.new(sock, store).serve }
-  ensure
-    File.delete("pid")
-  end
+
+  require 'gserver'
+  server = NNTPServer.new(1119)
+  server.store = Storage.new(ARGV[0])
+  server.start(-1)
+  server.join
 end
