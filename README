@@ -1,2 +1,86 @@
-niouz is a small, simple NNTP server suitable to set up private newsgroups for an intranet or workgroup.
+niouz is a small, simple NNTP server suitable to set up private
+newsgroups for an intranet or workgroup.
 
+h1. What's niouz ?
+
+niouz is an extremely simple NNTP(Net News Transport Protocol) server implemented in pure
+"Ruby":http://www.ruby-lang.org/. It does not offer all the features of standard NNTP
+servers like CNews or INN (most notably, it can't communicate with other servers, but only
+with clients), but it is orders of magnitudes simpler to deploy.
+
+niouz provides a simple and easy way to quickly set up private newsgroups for a small
+group of people. It generally does the "Simplest Thing That Can Possibly
+Work":http://c2.com/cgi/wiki?DoTheSimplestThingThatCouldPossiblyWork, and would probably
+not scale beyond a few dozen users and a few thousands messages. On the other hand, the
+resulting code is quite small (about 600 lines including comments), easy to understand and
+to modify/extend.
+    
+It's been used internally in the research department I worked in for more than two years
+now, and it seems quite stable (no data loss, no server crash ever) although given the low
+number of users and messages, it's difficult to be sure how much load it can handle.
+
+h2. Availability
+
+* Home: "http://github.com/pcdavid/niouz":http://github.com/pcdavid/niouz
+* Current version and status: 0.5, beta
+* License: "GPL v2":http://www.gnu.org/copyleft/gpl.html
+* Author/Contact: Pierre-Charles David "<pcdavid@gmail.com>":mailto:pcdavid@gmail.com
+
+h2. Requirements
+
+* "Ruby 1.8.x":http://www.ruby-lang.org/
+* That's all!
+
+Beware Debian users. The Debian package named @ruby1.8@ does not contain Ruby's standard
+library. You need to install WEBrick explicitely. The package is named
+@libwebrick-ruby1.8@.
+
+h3. Installation and configuration
+
+# Get it from "http://github.com/pcdavid/niouz/tree":http://github.com/pcdavid/niouz/tree
+<pre>$ chmod a+x /usr/local/bin/niouz</pre>
+# Create a place for the articles:
+
+  @$ mkdir -p /srv/niouz/articles@
+# Create the groups:
+  <pre>
+$ cat > /srv/niouz/newsgroups
+Name: test
+Date-Created: 2004-08-24
+Description: blah blah
+
+Name: projects.foobar
+Date-Created: 2004-08-24
+Description: Discussion related to project foobar
+^D</pre>
+# Run it:
+
+  @$ su -c /usr/local/bin/niouz /srv/niouz@
+# Enjoy!
+
+By default, it listens to port 119, so you need to be root to run it. It you don't like
+that, just edit the script to change the port.
+    
+If you want to add new groups, just kill the process, edit the @newsgroups@ file and
+restart.
+
+h1. Features
+
+* One file, no dependencies outside Ruby 1.8, very easy to setup.
+* Small (less than 600 lines), simple code, easy to customize/extend.
+* Generally does The Simplest Thing That Could Possibly Work.
+* (Too) simple database format; easy to hack if necessary.
+* Implements all the basic NTTP commands, plus some extensions (some partially, but well
+  enough for most clients).
+* Works with all major clients.
+* Never forgets/expires articles.
+* Lots of room for expansion! @:-)@
+
+h1. Limitations
+
+* Does not interact with other NNTP servers (by design).
+* Probably does not scale very well.
+* Stays in memory (no inetd mode).
+* Only tested under Linux.
+* Some relatively standard NNTP extensions are not supported, most importantly article
+  cancellation and authentification.
