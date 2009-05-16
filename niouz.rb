@@ -575,16 +575,6 @@ if __FILE__ == $0
     end
     require 'webrick/server'
 
-    # Deamonization (thanks to Reimer Behrends, see [ruby-talk:87467])
-    exit if fork
-    Process.setsid
-    exit if fork
-    Dir.chdir ARGV[0]
-    File.umask 0000
-    STDIN.reopen "/dev/null"
-    STDOUT.reopen "/dev/null", "a"
-    STDERR.reopen STDOUT
-
     store = Storage.new(ARGV[0])
     server = WEBrick::GenericServer.new(:Port => 119)
     trap("INT") { server.shutdown }
