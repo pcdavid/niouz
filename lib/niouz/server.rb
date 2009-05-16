@@ -1,12 +1,4 @@
-#!/usr/bin/env ruby
-# niouz.rb -- A small, simple NNTP server suitable to set up
-# private newsgroups for an intranet or workgroup.
-#
-# Homepage:: http://pcdavid.net/software/niouz/
-# Author::    Pierre-Charles David (mailto:pcdavid@pcdavid.net)
-# Copyright:: Copyright (c) 2003, 2004 Pierre-Charles David
-# License::   GPL v2 (www.gnu.org/copyleft/gpl.html)
-
+# -*- ruby -*-
 require 'socket'
 require 'thread'
 require 'time'
@@ -560,29 +552,6 @@ class NNTPSession
       else
         putline "500 command not supported"
       end
-    end
-  end
-end
-
-if __FILE__ == $0
-  if ARGV.length != 1
-    puts "Usage: #{$0} storage_dir"
-    exit 1
-  else
-    if not (File.directory?(ARGV[0]) && File.executable?(ARGV[0]))
-      puts "Directory #{ARGV[0]} must exist and be executable/traversable."
-      exit 2
-    end
-    require 'webrick/server'
-
-    store = Storage.new(ARGV[0])
-    server = WEBrick::GenericServer.new(:Port => 119)
-    trap("INT") { server.shutdown }
-    File.open("pid", "w") { |f| f.puts($$); }
-    begin
-      server.start { |sock| NNTPSession.new(sock, store).serve }
-    ensure
-      File.delete("pid")
     end
   end
 end
