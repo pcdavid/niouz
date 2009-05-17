@@ -1,12 +1,15 @@
 # -*- ruby -*-
 
 module Niouz
+  # The main entry point of the server. Creates a new NNTPSession for
+  # each client.
   class NNTPServer < GServer
     DEFAULT_PORT = 119
 
+    # The grousp/articles store to serve.
     attr_accessor :store
 
-    def initialize(port = 119, host = GServer::DEFAULT_HOST)
+    def initialize(port = DEFAULT_PORT, host = GServer::DEFAULT_HOST)
       super(port, host, Float::MAX, $stderr, true)
     end
 
@@ -15,6 +18,7 @@ module Niouz
     end
   end
 
+  # An individual NNTP session with a client.
   class NNTPSession
     def initialize(socket, storage)
       @socket, @storage = socket, storage
