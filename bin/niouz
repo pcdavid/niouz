@@ -14,7 +14,7 @@ require 'optparse'
 require 'ostruct'
 
 options = OpenStruct.new
-options.port = NNTPServer::DEFAULT_PORT
+options.port = Niouz::NNTPServer::DEFAULT_PORT
 options.root = Dir.pwd
 
 OptionParser.new do |opts|
@@ -38,8 +38,8 @@ OptionParser.new do |opts|
 end.parse!
 
 Dir.chdir(options.root) do
-  server = NNTPServer.new(options.port)
-  server.store = Storage.new(Dir.pwd)
+  server = Niouz::NNTPServer.new(options.port)
+  server.store = Niouz::Storage.new(Dir.pwd)
   server.start(-1)
   server.join
 end
