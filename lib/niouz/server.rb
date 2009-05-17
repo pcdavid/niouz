@@ -3,6 +3,7 @@ require 'socket'
 require 'thread'
 require 'time'
 require 'md5'
+require 'gserver'
 
 PROG_NAME = 'niouz'
 PROG_VERSION  = '0.5'
@@ -553,5 +554,17 @@ class NNTPSession
         putline "500 command not supported"
       end
     end
+  end
+end
+
+class NNTPServer < GServer
+  attr_accessor :store
+
+  def initialize(port = 119, host = GServer::DEFAULT_HOST)
+    super(port, host, Float::MAX, $stderr, true)
+  end
+
+  def serve(sock)
+    NNTPSession.new(sock, @store).serve
   end
 end
