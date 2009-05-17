@@ -558,6 +558,8 @@ class NNTPSession
 end
 
 class NNTPServer < GServer
+  DEFAULT_PORT = 119
+
   attr_accessor :store
 
   def initialize(port = 119, host = GServer::DEFAULT_HOST)
