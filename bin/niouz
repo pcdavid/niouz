@@ -10,18 +10,36 @@
 $:.unshift File.join(File.dirname(__FILE__), %w[.. lib])
 
 require 'niouz/server'
+require 'optparse'
+require 'ostruct'
 
-if ARGV.length != 1
-  puts "Usage: #{$0} storage_dir"
-  exit 1
-else
-  if not (File.directory?(ARGV[0]) && File.executable?(ARGV[0]))
-    puts "Directory #{ARGV[0]} must exist and be executable/traversable."
-    exit 2
+options = OpenStruct.new
+options.port = NNTPServer::DEFAULT_PORT
+options.root = Dir.pwd
+
+OptionParser.new do |opts|
+  opts.banner = "Usage: #$0 [options]"
+
+  opts.on('-r', '--root [DIRECTORY]',
+          "Use the specified root location instead of the current directory") do |root|
+    options.root = root
   end
 
-  server = NNTPServer.new(1119)
-  server.store = Storage.new(ARGV[0])
+  opts.on('-p', '--port [NUM]', Integer,
+          "Use the specified port instead of the default (#{options.port})") do |port|
+    options.port = port
+  end
+
+  opts.on_tail('-h', '--help', 'Show this message') do
+    puts opts
+    exit
+  end
+
+end.parse!
+
+Dir.chdir(options.root) do
+  server = NNTPServer.new(options.port)
+  server.store = Storage.new(Dir.pwd)
   server.start(-1)
   server.join
 end
