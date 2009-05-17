@@ -9,7 +9,7 @@
 
 $:.unshift File.join(File.dirname(__FILE__), %w[.. lib])
 
-require 'niouz/server'
+require 'niouz'
 require 'optparse'
 require 'ostruct'
 
