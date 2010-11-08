@@ -2,7 +2,12 @@
 require 'socket'
 require 'thread'
 require 'time'
-require 'md5'
+begin
+  require 'md5'
+rescue Exception => e
+  require 'digest/md5'
+  MD5 = Digest::MD5
+end
 require 'gserver'
 
 module Niouz
