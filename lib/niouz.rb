@@ -4,7 +4,7 @@ require 'thread'
 require 'time'
 begin
   require 'md5'
-rescue Exception => e
+rescue LoadError => e
   require 'digest/md5'
   MD5 = Digest::MD5
 end
