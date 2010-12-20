@@ -1,5 +1,4 @@
-niouz is a small, simple NNTP server suitable to set up private
-newsgroups for an intranet or workgroup.
+niouz is a small, simple NNTP server suitable to set up private newsgroups for an intranet or workgroup.
 
 h1. What's niouz ?
 
@@ -22,7 +21,7 @@ number of users and messages, it's difficult to be sure how much load it can han
 h2. Availability
 
 * Home: "http://github.com/pcdavid/niouz":http://github.com/pcdavid/niouz
-* Current version and status: 0.5, beta
+* Current version and status: 0.6, beta
 * License: "GPL v2":http://www.gnu.org/copyleft/gpl.html
 * Author/Contact: Pierre-Charles David "<pcdavid@gmail.com>":mailto:pcdavid@gmail.com
 
