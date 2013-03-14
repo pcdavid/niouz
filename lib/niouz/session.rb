@@ -8,33 +8,36 @@ module Niouz
       @article=nil
     end
 
+    def greet
+      r(200,nil,"server ready (#{PROG_NAME} -- #{PROG_VERSION})")
+    end
 
     def article(part, mid, pos)
       case
         when mid
           article = @storage.article(mid)
           if article.nil?
-            "430 no such article found"
+            r(430)
           else
             send_article_part(article, nil, part)
           end
         when pos
           if @group.nil?
-            '412 no newsgroup has been selected'
+            r(412)
           else
             if @group.has_article?(pos)
               @article = @group[pos]
               send_article_part(@article, pos, part)
             else
-              '423 no such article number in this group'
+              r(423)
             end
           end
         else
           case
             when @group.nil?
-              '412 no newsgroup has been selected'
+              r(412)
             when @article.nil?
-              "430 no such article found" #check if this is the right answer
+              r(430)
             else
               send_article_part(@article, nil, part)
           end
@@ -42,22 +45,26 @@ module Niouz
     end
 
     def post(raw_article)
-      head = Niouz::Rfc822Parser.parse_header(raw_article)
-      if not head.has_key?('Message-ID')
-        raw_article = "Message-ID: #{@storage.gen_uid}\n" + raw_article
-      end
-      if not head.has_key?('Date')
-        raw_article = "Date: #{Time.now}\n" + raw_article
-      end
-      if @storage.create_article(raw_article)
-        '240 Article received ok'
+      if raw_article
+        head = Niouz::Rfc822Parser.parse_header(raw_article)
+        if not head.has_key?('Message-ID')
+          raw_article = "Message-ID: #{@storage.gen_uid}\n" + raw_article
+        end
+        if not head.has_key?('Date')
+          raw_article = "Date: #{Time.now}\n" + raw_article
+        end
+        if @storage.create_article(raw_article)
+          r(240)
+        else
+          r(441)
+        end
       else
-        '441 Posting failed'
+        r(340)
       end
     end
 
     def newnews(groups, time, distribs)
-      resp = "230 list of new articles by message-id follows\n"
+      resp = ""
       @storage.each_article do |article|
         if article.existed_at?(time) and article.matches_groups?(groups) and
             @storage.groups_of(article).any? { |g| g.matches_distribs?(distribs) }
@@ -65,21 +72,21 @@ module Niouz
         end
       end
       resp << "."
+      r(230, resp)
     end
 
-    def overview
+    def list_overview
       if Article::OVERVIEW_FMT
-        "'215 order of fields in overview database\n" +
-            Article::OVERVIEW_FMT.map { |header| header + ":\n" }.join + "."
+        r(215, Article::OVERVIEW_FMT.map { |header| header + ":\n" }.join + ".")
       else
-        '503 program error, function not performed'
+        r(503)
       end
     end
 
     #from, to
     def xover(one, two, three)
       if @group.nil?
-        '412 no news group currently selected'
+        r(412)
       else
         if not one then
           articles = [@article]
@@ -90,45 +97,45 @@ module Niouz
           articles = (one.to_i .. last).select { |n| @group.has_article?(n) }
         end
         if articles.compact.empty? or articles == [0]
-          '420 no article(s) selected'
+          r(420)
         else
-          "224 Overview information follows\n" +
-              articles.map do |nb|
-                "#{nb}\t#{@group[nb].overview}\n"
-              end.join() + '.'
+          r(224,
+            articles.map do |nb|
+              "#{nb}\t#{@group[nb].overview}\n"
+            end.join() + '.')
         end
       end
     end
 
     def neswgroups(time, distribs)
-
-      resp="231 list of new newsgroups follows\n"
+      resp= ""
       @storage.each_group do |group|
         if group.existed_at?(time) and group.matches_distribs?(distribs)
           resp << "#{group.metadata}\n"
         end
       end
       resp << "."
+      r(231, resp)
     end
 
     def list
-      resp ="215 list of newsgroups follows\n"
+      resp =""
       @storage.each_group { |group| resp << "#{group.metadata}\n" }
       resp << "."
-      resp
+      r(215, resp)
     end
 
     def help
-      "100 help text follows\n"+
-          "Private news server\nCall admin to create new newsgroups\n."
+      r(100,
+        "Private news server\nCall admin to create new newsgroups\n.")
     end
 
     def date
-      '111 ' + Time.now.gmtime.strftime("%Y%m%d%H%M%S")
+      r(111, nil, Time.now.gmtime.strftime("%Y%m%d%H%M%S"))
     end
 
     def ihave
-      '435 article not wanted - do not send it'
+      r(435)
     end
 
     def next
@@ -140,23 +147,23 @@ module Niouz
     end
 
     def slave
-      '202 slave status acknowledged'
+      r(202)
     end
 
     def mode_reader
-      '200 reader status acknowledged'
+      r(200)
     end
 
     def group(name)
       if @storage.has_group?(name)
         @group = @storage.group(name)
         @article = @group.first
-        return "211 %d %d %d %s" % [@group.size_estimation,
-                                    @group.first,
-                                    @group.last,
-                                    @group.name] # FIXME: sync
+        r(211, nil, "%d %d %d %s" % [@group.size_estimation,
+                                     @group.first,
+                                     @group.last,
+                                     @group.name]) # FIXME: sync
       else
-        return '411 no such news group'
+        r(411)
       end
     end
 
@@ -165,21 +172,29 @@ module Niouz
       return n.to_s + "\t" + article.overview
     end
 
+    def quit
+      r(205)
+    end
+
+    def unknown
+      r(500)
+    end
+
     private
     def move_article_pointer(direction)
       if @group.nil?
-        return '412 no newsgroup selected'
+        r(412)
       elsif @article.nil?
-        return '420 no current article has been selected'
+        r(420)
       else
         # HACK: depends on method names
         article = @group.send((direction.to_s + '_article').intern, @article)
         if article
           @article = article
           mid = @group[@article].mid
-          return "223 #@article #{mid} article retrieved: request text separately"
+          r(223, nil, "#@article #{mid} article retrieved: request text separately")
         else
-          return "422 no #{direction} article in this newsgroup"
+          r(422, nil, "no #{direction} article in this newsgroup")
         end
       end
     end
@@ -196,10 +211,10 @@ module Niouz
                        when /STAT/i then
                          ['223', nil]
                      end
-      resp = "#{code} #{nb} #{article.mid} article retrieved\n"
+      resp = ""
       resp << encodelong(article.send(method)) if method
       resp << "\n."
-      resp
+      r(code, resp, "#{code} #{nb} #{article.mid} article retrieved")
     end
 
 
@@ -211,5 +226,13 @@ module Niouz
       end.join
     end
 
+    def r(code, body=nil, code_msg=nil)
+      resp="#{code} #{code_msg || Niouz::Status.msg(code)}"
+      if body
+        resp <<"\n"
+        resp << body
+      end
+      resp
+    end
   end
 end

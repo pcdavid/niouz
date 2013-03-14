@@ -20,9 +20,13 @@ end
 require 'logger'
 
 require 'niouz/rfc822_parser'
-require 'niouz/article'
-require 'niouz/newsgroup'
+require 'niouz/status'
 require 'niouz/storage'
 require 'niouz/session'
 require 'niouz/protocol'
 require 'niouz/server'
+
+require 'niouz/article'
+require 'niouz/newsgroup'
+
+

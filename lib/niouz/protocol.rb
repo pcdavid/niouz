@@ -4,7 +4,7 @@ module Niouz
     def initialize(session,socket=nil)
       @session=session
       @socket=socket
-      greet
+      @session.greet
     end
 
     def dispatch(req)
@@ -28,7 +28,7 @@ module Niouz
         when /^LIST$/i
           putline @session.list #don't escape dots
         when /^LIST\s+OVERVIEW\.FMT$/i
-          putline @session.overview
+          putline @session.list_overview
         when /^XOVER(\s+\d+)?(-)?(\d+)?$/i
           putline @session.xover($1, $2, $3)
         when /^NEWGROUPS\s+(\d{6})\s+(\d{6})(\s+GMT)?(\s+<.+>)?$/i
@@ -46,14 +46,14 @@ module Niouz
           pos = ($2 ? $2.to_i : nil)
           putline @session.article($1, nil, pos)
         when /^POST$/i # Article posting
-          putline '340 Send article to be posted'
+          putline @session.post(nil)
           raw_article = getlong
           putline @session.post(raw_article)
         when /^QUIT$/i # Session end
-          putline "205 closing connection - goodbye!"
+          putline @session.quit
           :close
         else
-          putline "500 command not supported"
+          putline @session.unkown
       end
     end
 
@@ -102,8 +102,5 @@ module Niouz
       dist ? dist.strip.delete('<> ').split(/,/) : nil
     end
 
-    def greet
-      putline "200 server ready (#{PROG_NAME} -- #{PROG_VERSION})"
-    end
   end
 end
