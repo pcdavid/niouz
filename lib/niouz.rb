@@ -12,9 +12,7 @@ require 'gserver'
 
 module Niouz
   PROG_NAME = 'niouz'
-  PROG_VERSION = '0.5'
-
-
+  PROG_VERSION = '0.7'
 end
 
 require 'logger'
