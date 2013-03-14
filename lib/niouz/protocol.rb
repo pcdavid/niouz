@@ -1,68 +1,83 @@
 module Niouz
   class Protocol
     #parses input and dispatches to session
-    def initialize(session,socket=nil)
+    def initialize(session, socket=nil)
       @session=session
       @socket=socket
-      @session.greet
+      send(@session.greet)
     end
 
     def dispatch(req)
-      case req
-        when /^GROUP\s+(.+)$/i then
-          putline @session.group($1)
-        when /^NEXT$/i then
-          putline @session.next
-        when /^LAST$/i then
-          putline @session.previous
-        when /^MODE\s+READER/i then
-          putline @session.mode_reader
-        when /^SLAVE$/i then
-          putline @session.slave
-        when /^IHAVE\s*/i then
-          putline @session.ihave
-        when /^DATE$/i
-          putline @session.date
-        when /^HELP$/i
-          putline @session.help
-        when /^LIST$/i
-          putline @session.list #don't escape dots
-        when /^LIST\s+OVERVIEW\.FMT$/i
-          putline @session.list_overview
-        when /^XOVER(\s+\d+)?(-)?(\d+)?$/i
-          putline @session.xover($1, $2, $3)
-        when /^NEWGROUPS\s+(\d{6})\s+(\d{6})(\s+GMT)?(\s+<.+>)?$/i
-          time = read_time($1, $2, $3)
-          distribs = read_distribs($4)
-          putline @session.newsgroups(time, distribs)
-        when /^NEWNEWS\s+(.*)\s+(\d{6})\s+(\d{6})(\s+GMT)?\s+(<.+>)?$/i
-          groups = $1.split(/\s*,\s*/)
-          time = read_time($2, $3, $4)
-          distribs = read_distribs($5)
-          putline @session.newnews(groups, time, distribs)
-        when /^(ARTICLE|HEAD|BODY|STAT)\s+<(.*)>$/i
-          putline @session.article($1, $2, nil)
-        when /^(ARTICLE|HEAD|BODY|STAT)(\s+\d+)?$/i
-          pos = ($2 ? $2.to_i : nil)
-          putline @session.article($1, nil, pos)
-        when /^POST$/i # Article posting
-          putline @session.post(nil)
-          raw_article = getlong
-          putline @session.post(raw_article)
-        when /^QUIT$/i # Session end
-          putline @session.quit
-          :close
-        else
-          putline @session.unkown
-      end
+      out=case req
+            when /^GROUP\s+(.+)$/i then
+              @session.group($1)
+            when /^NEXT$/i then
+              @session.next
+            when /^LAST$/i then
+              @session.last
+            when /^MODE\s+READER/i then
+              @session.mode_reader
+            when /^SLAVE$/i then
+              @session.slave
+            when /^IHAVE\s*/i then
+              @session.ihave
+            when /^DATE$/i
+              @session.date
+            when /^HELP$/i
+              @session.help
+            when /^LIST$/i
+              @session.list #don't escape dots
+            when /^LIST\s+OVERVIEW\.FMT$/i
+              @session.list_overview
+            when /^XOVER(\s+\d+)?(-)?(\d+)?$/i
+              @session.xover($1, $2, $3)
+            when /^NEWGROUPS\s+(\d{6})\s+(\d{6})(\s+GMT)?(\s+<.+>)?$/i
+              time = read_time($1, $2, $3)
+              distribs = read_distribs($4)
+              @session.newgroups(time, distribs)
+            when /^NEWNEWS\s+(.*)\s+(\d{6})\s+(\d{6})(\s+GMT)?\s+(<.+>)?$/i
+              groups = $1.split(/\s*,\s*/)
+              time = read_time($2, $3, $4)
+              distribs = read_distribs($5)
+              @session.newnews(groups, time, distribs)
+            when /^(ARTICLE|HEAD|BODY|STAT)\s+<(.*)>$/i
+              @session.article($1, $2, nil)
+            when /^(ARTICLE|HEAD|BODY|STAT)(\s+\d+)?$/i
+              pos = ($2 ? $2.to_i : nil)
+              @session.article($1, nil, pos)
+            when /^POST$/i # Article posting this is a twostep process
+              res=@session.post_pre
+              if res[0] == 340
+                send(res)
+                raw_article = getlong
+                @session.post(raw_article)
+              else
+                res
+              end
+            when /^QUIT$/i # Session end
+              @session.quit
+            else
+              @session.unknown
+          end
+      #out = [code,escaped body, code_msg]
+      send(out)
+      out[0]==205 ? :quit : nil
     end
-
 
     private
 
+    def send(out)
+      resp="#{out[0]} #{out[2]}\n"
+      if out[1]
+        resp << out[1] << "\n" unless out[1].empty?
+        resp << "."
+      end
+      putline resp
+    end
+
     # Sends a single-line response to the client
     def putline(line)
-      @socket.write("#{line.chomp}\r\n")  if @socket
+      @socket.write("#{line.chomp}\r\n") if @socket
     end
 
     # Reads a multi-line message from a client (normally an

@@ -12,55 +12,63 @@ module Niouz
     def initialize(port = DEFAULT_PORT, host = GServer::DEFAULT_HOST)
       @logger=Logger.new($stderr)
       @logger.info("[SERVER] starting")
-      super(port, host, Float::MAX, $stderr, true)
+      super(port, host, Float::MAX, nil, true)
     end
 
     def serve(sock)
       NNTPConnection.new(sock, @store, @logger).serve
     end
-  end
 
-  # An individual NNTP session with a client.
-  class NNTPConnection
-    def initialize(socket, storage, logger)
-
-      @socket, @storage = socket, storage
-      @logger=logger
-
-      @session=Niouz::Session.new(@storage)
-      @protocol=Niouz::Protocol.new(@session, @socket)
+    def connecting(client)
+      addr = client.peeraddr
+      @logger.debug("[CLIENT] connect(#{connections}) server:#{@host}:#{@port} client:#{addr[1]} #{addr[2]}<#{addr[3]}>")
+      true
     end
 
+    def disconnecting(clientPort)
+      @logger.debug("[CLIENT] disconnect #{@host}:#{@port}  client:#{clientPort}")
+    end
 
-    def serve
+    # An individual NNTP session with a client.
+    class NNTPConnection
+      def initialize(socket, storage, logger)
 
-      while (request = getline)
-        begin
-          @logger.debug("RECEIVED: '#{request.inspect}'")
+        @socket, @storage = socket, storage
+        @logger=logger
 
-          if @protocol.dispatch(request.strip) == :close
-            close
-            return
+        @session=Niouz::Session.new(@storage)
+        @protocol=Niouz::Protocol.new(@session, @socket)
+      end
+
+
+      def serve
+        while (request = getline)
+          begin
+            @logger.debug("RECEIVED: '#{request.inspect}'")
+            if @protocol.dispatch(request.strip) == :quit
+              close
+              return
+            end
+          rescue Interrupt
+            raise
+          rescue Exception => err
+            #TODO: send some error code
+            @logger.error("Exception: #{err.message}\n#{err.backtrace.join("\n")}")
           end
-        rescue Interrupt
-          raise
-        rescue Exception => err
-          #TODO: send some error code
-          @logger.error("Exception: #{err.message}\n#{err.backtrace.join("\n")}")
         end
       end
+
+      private
+      def close
+        @socket.close
+      end
+
+      # Reads a single line from the client and returns it.
+      def getline
+        return @socket.gets
+      end
+
+
     end
-
-    private
-    def close
-      @socket.close
-    end
-
-    # Reads a single line from the client and returns it.
-    def getline
-      return @socket.gets
-    end
-
-
   end
 end

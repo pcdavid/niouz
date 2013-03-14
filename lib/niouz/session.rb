@@ -9,7 +9,7 @@ module Niouz
     end
 
     def greet
-      r(200,nil,"server ready (#{PROG_NAME} -- #{PROG_VERSION})")
+      r(200, nil, "server ready (#{PROG_NAME} -- #{PROG_VERSION})")
     end
 
     def article(part, mid, pos)
@@ -44,40 +44,41 @@ module Niouz
       end
     end
 
+    def post_pre
+      r(340)
+    end
+
     def post(raw_article)
-      if raw_article
-        head = Niouz::Rfc822Parser.parse_header(raw_article)
-        if not head.has_key?('Message-ID')
-          raw_article = "Message-ID: #{@storage.gen_uid}\n" + raw_article
-        end
-        if not head.has_key?('Date')
-          raw_article = "Date: #{Time.now}\n" + raw_article
-        end
-        if @storage.create_article(raw_article)
-          r(240)
-        else
-          r(441)
-        end
-      else
-        r(340)
+
+      head = Niouz::Rfc822Parser.parse_header(raw_article)
+      if not head.has_key?('Message-ID')
+        raw_article = "Message-ID: #{@storage.gen_uid}\n" + raw_article
       end
+      if not head.has_key?('Date')
+        raw_article = "Date: #{Time.now}\n" + raw_article
+      end
+      if @storage.create_article(raw_article)
+        r(240)
+      else
+        r(441)
+      end
+
     end
 
     def newnews(groups, time, distribs)
-      resp = ""
+      resp = []
       @storage.each_article do |article|
         if article.existed_at?(time) and article.matches_groups?(groups) and
             @storage.groups_of(article).any? { |g| g.matches_distribs?(distribs) }
-          resp << "#{article.mid.sub(/^\./, '..')}\n"
+          resp << dot_escape(article.mid)
         end
       end
-      resp << "."
       r(230, resp)
     end
 
     def list_overview
       if Article::OVERVIEW_FMT
-        r(215, Article::OVERVIEW_FMT.map { |header| header + ":\n" }.join + ".")
+        r(215, Article::OVERVIEW_FMT.map { |header| header + ":" })
       else
         r(503)
       end
@@ -99,35 +100,28 @@ module Niouz
         if articles.compact.empty? or articles == [0]
           r(420)
         else
-          r(224,
-            articles.map do |nb|
-              "#{nb}\t#{@group[nb].overview}\n"
-            end.join() + '.')
+          r(224, articles.map do |nb| "#{nb}\t#{@group[nb].overview}" end)
         end
       end
     end
 
-    def neswgroups(time, distribs)
-      resp= ""
+    def newgroups(time, distribs)
+      resp= []
       @storage.each_group do |group|
-        if group.existed_at?(time) and group.matches_distribs?(distribs)
-          resp << "#{group.metadata}\n"
-        end
+        resp << group.metadata if group.existed_at?(time) and group.matches_distribs?(distribs)
       end
-      resp << "."
       r(231, resp)
     end
 
     def list
-      resp =""
-      @storage.each_group { |group| resp << "#{group.metadata}\n" }
-      resp << "."
+      resp =[]
+      @storage.each_group { |group| resp << group.metadata }
       r(215, resp)
     end
 
     def help
       r(100,
-        "Private news server\nCall admin to create new newsgroups\n.")
+        ["Private news server","Call admin to create new newsgroups"])
     end
 
     def date
@@ -142,7 +136,7 @@ module Niouz
       move_article_pointer(:next)
     end
 
-    def previous
+    def last
       move_article_pointer(:previous)
     end
 
@@ -165,11 +159,6 @@ module Niouz
       else
         r(411)
       end
-    end
-
-
-    def overview(n, article)
-      return n.to_s + "\t" + article.overview
     end
 
     def quit
@@ -213,7 +202,6 @@ module Niouz
                      end
       resp = ""
       resp << encodelong(article.send(method)) if method
-      resp << "\n."
       r(code, resp, "#{code} #{nb} #{article.mid} article retrieved")
     end
 
@@ -222,17 +210,17 @@ module Niouz
     # to the client.
     def encodelong(content)
       content.lines.map do |line|
-        line.sub(/^\./, '..')
+        dot_escape(line)
       end.join
     end
 
+    def dot_escape(str)
+      str.sub(/^\./, '..')
+    end
+
     def r(code, body=nil, code_msg=nil)
-      resp="#{code} #{code_msg || Niouz::Status.msg(code)}"
-      if body
-        resp <<"\n"
-        resp << body
-      end
-      resp
+      body=body.join("\n") if body.kind_of?(Array)
+      [code, body, code_msg || Niouz::Status.msg(code)]
     end
   end
 end
