@@ -224,7 +224,7 @@ module Niouz
         when /^POST$/i         # Article posting
           putline '340 Send article to be posted'
           article = getarticle
-          head = Niouz.parse_rfc822_header(article)
+          head = Niouz::Rfc822Parser.parse_header(article)
           if not head.has_key?('Message-ID')
             article = "Message-ID: #{@storage.gen_uid}\n" + article
           end

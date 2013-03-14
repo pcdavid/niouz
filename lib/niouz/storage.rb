@@ -19,8 +19,8 @@ module Niouz
     # Parses the newsgroups description file.
     def load_groups(input)
       groups = Hash.new
-      while g = Niouz.parse_rfc822_header(input)
-        date = Niouz.parse_date(g['Date-Created'])
+      while g = Niouz::Rfc822Parser.parse_header(input)
+        date = Niouz::Rfc822Parser.parse_date(g['Date-Created'])
         groups[g['Name']] = Newsgroup.new(g['Name'], date, g['Description'])
       end
       return groups
