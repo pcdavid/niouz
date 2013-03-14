@@ -1,4 +1,6 @@
 module Niouz
+
+
   # Represents a news article stored as a simple text file in RFC822
   # format. Only the minimum information is kept in memory by instances
   # of this class:
@@ -14,6 +16,12 @@ module Niouz
   # of the file storing the article or the state of the instances
   # once created. Thread-safe.
   class Article
+    # Format of the overview "database", as an ordered list of header
+    # names. See RCF 2980, Sections 2.1.7 ("LIST OVERVIEW.FMT") & 2.8
+    # ("XOVER").
+    OVERVIEW_FMT = [
+        'Subject', 'From', 'Date', 'Message-ID', 'References', 'Bytes', 'Lines'
+    ]
     # Creates a new Article from the content of file +fname+.
     def initialize(fname)
       @file = fname
@@ -75,7 +83,7 @@ module Niouz
     end
 
     def matches_groups?(groups_specs) # TODO
-      # See description of NEWNEWS command in RFC 977.
+                                      # See description of NEWNEWS command in RFC 977.
       return true
     end
   end

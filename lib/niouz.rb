@@ -12,20 +12,17 @@ require 'gserver'
 
 module Niouz
   PROG_NAME = 'niouz'
-  PROG_VERSION  = '0.5'
-
-  # Format of the overview "database", as an ordered list of header
-  # names. See RCF 2980, Sections 2.1.7 ("LIST OVERVIEW.FMT") & 2.8
-  # ("XOVER").
-  OVERVIEW_FMT = [
-    'Subject', 'From', 'Date', 'Message-ID', 'References', 'Bytes', 'Lines'
-  ]
+  PROG_VERSION = '0.5'
 
 
 end
+
+require 'logger'
 
 require 'niouz/rfc822_parser'
 require 'niouz/article'
 require 'niouz/newsgroup'
 require 'niouz/storage'
+require 'niouz/session'
+require 'niouz/protocol'
 require 'niouz/server'
