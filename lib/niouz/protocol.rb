@@ -4,11 +4,13 @@ module Niouz
     def initialize(session, socket=nil)
       @session=session
       @socket=socket
-      send(@session.greet)
+      send(@session.greet) #handle 402 and 502 response (close connection)
     end
 
     def dispatch(req)
       out=case req
+            when /^CAPABILITIES((\s+)(.+))?$/i then
+              @session.capabilities($3)
             when /^GROUP\s+(.+)$/i then
               @session.group($1)
             when /^NEXT$/i then

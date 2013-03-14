@@ -8,7 +8,13 @@ module Niouz
       @article=nil
     end
 
-    def greet
+    def capabilities # http://tools.ietf.org/html/rfc3977#section-3.3.2
+      #statedependent!
+      r(101,["VERSION 2","READER","NEWNEWS","POST","LIST"])
+      #IHAVE,HDR,OVER IMPLEMENTATION, MODE-READER, STARTTLS , STREAMING, VERSION
+    end
+    def greet # http://tools.ietf.org/html/rfc3977#section-5.1.1
+      #200,201,400,502
       r(200, nil, "server ready (#{PROG_NAME} -- #{PROG_VERSION})")
     end
 
