@@ -9,8 +9,8 @@ module Niouz
     # The grousp/articles store to serve.
     attr_accessor :store
 
-    def initialize(port = DEFAULT_PORT, host = GServer::DEFAULT_HOST)
-      @logger=Logger.new($stderr)
+    def initialize(port = DEFAULT_PORT, host = GServer::DEFAULT_HOST,logger = Logger.new($stderr))
+      @logger=logger
       @logger.info("[SERVER] starting")
       super(port, host, Float::MAX, nil, true)
     end

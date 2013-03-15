@@ -1,9 +1,15 @@
 module Niouz
   # This class manages the "database" of groups and articles.
   class Storage
-    def initialize(dir)
+    def initialize(dir, logger)
+      @logger=logger
       File.open(File.join(dir, 'newsgroups')) do |file|
         @groups = load_groups(file)
+      end
+      users_filename=File.join(dir, 'users')
+      if File.exist?(users_filename)
+        UserFile.load(users_filename)
+        @logger.info("[SERVER] found user file authentication enabled")
       end
       @pool = File.join(dir, 'articles')
       @last_file_id = 0
@@ -11,7 +17,7 @@ module Niouz
       @articles = Hash.new
       Dir.foreach(@pool) do |fname|
         next if fname[0] == ?.
-        @last_file_id = [ @last_file_id, fname.to_i ].max
+        @last_file_id = [@last_file_id, fname.to_i].max
         register_article(fname)
       end
     end
@@ -45,7 +51,7 @@ module Niouz
     end
 
     def each_group
-      @groups.each_value {|grp| yield(grp) }
+      @groups.each_value { |grp| yield(grp) }
     end
 
     def article(mid)
@@ -65,7 +71,7 @@ module Niouz
       begin
         @lock.synchronize {
           @last_file_id += 1;
-          fname = "%06d" % [ @last_file_id ]
+          fname = "%06d" % [@last_file_id]
           File.open(File.join(@pool, fname), "w") { |f| f.write(content) }
           register_article(fname)
         }

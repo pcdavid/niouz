@@ -38,8 +38,9 @@ OptionParser.new do |opts|
 end.parse!
 
 Dir.chdir(options.root) do
-  server = Niouz::NNTPServer.new(options.port)
-  server.store = Niouz::Storage.new(Dir.pwd)
+  logger=Logger.new($stderr)
+  server = Niouz::NNTPServer.new(options.port,GServer::DEFAULT_HOST,logger)
+  server.store = Niouz::Storage.new(Dir.pwd,logger)
   server.start(-1)
   server.join
 end

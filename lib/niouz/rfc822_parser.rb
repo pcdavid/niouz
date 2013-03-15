@@ -35,6 +35,16 @@ module Niouz
       end
       return headers.empty? ? nil : headers
     end
+    def self.parse_header_to_sym(input)
+      headers=parse_header(input)
+      return unless headers
+      new_headers={}
+      headers.each_pair do |key,value|
+        n_key=key.downcase.gsub("-","_").to_sym
+        new_headers[n_key]=value
+      end
+      new_headers
+    end
     # Utility to parse dates
     def self.parse_date(aString)
       return Time.rfc822(aString) rescue Time.parse(aString)

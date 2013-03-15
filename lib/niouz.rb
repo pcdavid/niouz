@@ -25,7 +25,10 @@ require 'niouz/auth_commands'
 require 'niouz/session'
 require 'niouz/protocol'
 require 'niouz/server'
+
+#models
 require 'niouz/article'
 require 'niouz/newsgroup'
-
+require 'niouz/user'
+require 'niouz/user_file'
 

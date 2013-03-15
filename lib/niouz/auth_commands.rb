@@ -14,8 +14,8 @@ module Niouz
 
     def authinfo_pass(password)
       if @username_try
-        if @username_try == 'test' && password == '1234'
-          @username=@username_try
+        if User.auth(@username_try, password)
+          @user=@username_try
           r(281)
         else
           @username_try=nil #reset sequence
@@ -27,8 +27,12 @@ module Niouz
     end
 
     private
+    def user
+      @user ||= User.guest
+    end
+
     def authenticated?
-      !!@username
+      !user.guest
     end
   end
 end
