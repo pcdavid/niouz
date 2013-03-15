@@ -20,10 +20,11 @@ require 'logger'
 require 'niouz/rfc822_parser'
 require 'niouz/status'
 require 'niouz/storage'
+require 'niouz/core_commands'
+require 'niouz/auth_commands'
 require 'niouz/session'
 require 'niouz/protocol'
 require 'niouz/server'
-
 require 'niouz/article'
 require 'niouz/newsgroup'
 

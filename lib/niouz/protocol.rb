@@ -13,6 +13,10 @@ module Niouz
               @session.capabilities($3)
             when /^GROUP\s+(.+)$/i then
               @session.group($1)
+            when /^AUTHINFO USER\s+(.+)$/i then
+              @session.authinfo_user($1)
+            when /^AUTHINFO PASS\s+(.+)$/i then
+              @session.authinfo_pass($1)
             when /^NEXT$/i then
               @session.next
             when /^LAST$/i then
@@ -28,9 +32,13 @@ module Niouz
             when /^HELP$/i
               @session.help
             when /^LIST$/i
-              @session.list #don't escape dots
+              @session.list
             when /^LIST\s+OVERVIEW\.FMT$/i
               @session.list_overview
+            when /^LIST\s+ACTIVE$/i
+              @session.list_overview
+            when /^LIST\s+NEWSGROUPS$/i
+              @session.list_newsgroups
             when /^XOVER(\s+\d+)?(-)?(\d+)?$/i
               @session.xover($1, $2, $3)
             when /^NEWGROUPS\s+(\d{6})\s+(\d{6})(\s+GMT)?(\s+<.+>)?$/i
@@ -38,10 +46,10 @@ module Niouz
               distribs = read_distribs($4)
               @session.newgroups(time, distribs)
             when /^NEWNEWS\s+(.*)\s+(\d{6})\s+(\d{6})(\s+GMT)?\s+(<.+>)?$/i
-              groups = $1.split(/\s*,\s*/)
+              wildmat = $1.split(/\s*,\s*/)
               time = read_time($2, $3, $4)
               distribs = read_distribs($5)
-              @session.newnews(groups, time, distribs)
+              @session.newnews(wildmat, time, distribs)
             when /^(ARTICLE|HEAD|BODY|STAT)\s+<(.*)>$/i
               @session.article($1, $2, nil)
             when /^(ARTICLE|HEAD|BODY|STAT)(\s+\d+)?$/i
