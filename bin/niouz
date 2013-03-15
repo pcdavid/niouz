@@ -39,8 +39,8 @@ end.parse!
 
 Dir.chdir(options.root) do
   logger=Logger.new($stderr)
-  server = Niouz::NNTPServer.new(options.port,GServer::DEFAULT_HOST,logger)
-  server.store = Niouz::Storage.new(Dir.pwd,logger)
+  server = Niouz::NNTPServer.new(options.port, GServer::DEFAULT_HOST, logger)
+  server.store = Niouz::Storage::Filesystem::Storage.init(logger, :dir => Dir.pwd)
   server.start(-1)
   server.join
 end

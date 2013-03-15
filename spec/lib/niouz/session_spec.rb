@@ -6,6 +6,6 @@ describe Niouz::Session do
   it "should return capabilities" do
     resp=session.capabilities
     resp[0].should == 101
-    resp[1].should == "VERSION 2\nREADER\nNEWNEWS\nPOST\nLIST"
+    resp[1].should == "VERSION 2\nREADER\nNEWNEWS\nPOST\nLIST\nAUTHINFO USER"
   end
 end

@@ -6,6 +6,14 @@ module Niouz
       end
     end
 
+    def self.storage
+      @storage
+    end
+
+    def self.storage=(obj)
+      @storage=obj
+    end
+
     attr_accessor :name, :username, :email, :password, :guest
     alias guest? guest
 
@@ -21,11 +29,16 @@ module Niouz
     end
 
     def self.find_by_username(username)
-      UserFile.by_username(username) || User.guest
+      storage.by_username(username) || User.guest
     end
 
     def self.guest
       @guest ||= new(:username => 'guest', :guest => true)
+    end
+
+    private
+    def storage
+      self.class.storage
     end
   end
 end
