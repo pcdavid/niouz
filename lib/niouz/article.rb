@@ -25,6 +25,7 @@ module Niouz
 
     include Model
 
+    #filestore specific
     def self.find_by_message_id(mid)
       return storage.by_message_id(mid)
     end
@@ -39,18 +40,26 @@ module Niouz
       end
     end
 
-    def self.create(atts={})
-      head = Niouz::Rfc822Parser.parse_header(atts[:content])
+    def self.create_from_content(content)
+      fix_content(content)
+      article=new(:content => content) #article does not store the content!
+      storage.save(article, content)
+      article
+    end
+
+
+
+    def self.fix_content(content)
+      #fix content
+      head = Niouz::Rfc822Parser.parse_header(content)
       if not head.has_key?('Message-ID')
         uid="<" + MD5.hexdigest(Time.now.to_s) + "@" + Socket.gethostname + ">"
-        atts[:content] = "Message-ID: #{uid}\n" + atts[:content]
+        content = "Message-ID: #{uid}\n" + content
       end
       if not head.has_key?('Date')
-        atts[:content] = "Date: #{Time.now}\n" + atts[:content]
+        content = "Date: #{Time.now}\n" + content
       end
-      article=new(atts) #article does not store the content!
-      storage.save(article, atts[:content])
-      article
+      content
     end
 
     def groups

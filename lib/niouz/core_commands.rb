@@ -55,7 +55,7 @@ module Niouz
 
 #http://tools.ietf.org/html/rfc3977#section-6.3.1
     def post(raw_article)
-      if Article.create(:content => raw_article)
+      if Article.create_from_content(raw_article)
         r(240)
       else
         r(441)
