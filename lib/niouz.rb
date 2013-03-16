@@ -19,7 +19,7 @@ require 'logger'
 
 require 'niouz/rfc822_parser'
 require 'niouz/status'
-require 'niouz/storage/filesystem'
+
 require 'niouz/core_commands'
 require 'niouz/auth_commands'
 require 'niouz/session'
@@ -27,8 +27,10 @@ require 'niouz/protocol'
 require 'niouz/server'
 
 #models
+require 'niouz/model'
 require 'niouz/article'
 require 'niouz/newsgroup'
 require 'niouz/user'
 
 
+require 'niouz/storage/filesystem'

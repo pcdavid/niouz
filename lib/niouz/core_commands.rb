@@ -3,9 +3,9 @@ module Niouz
   module CoreCommands
     def capabilities # http://tools.ietf.org/html/rfc3977#section-3.3.2
                      #statedependent!
-      r(101, ["VERSION 2", "READER", "NEWNEWS", "POST", "LIST" ,"AUTHINFO USER"])
+      r(101, ["VERSION 2", "READER", "NEWNEWS", "POST", "LIST", "AUTHINFO USER"])
                      #IHAVE,HDR,OVER IMPLEMENTATION, MODE-READER, STARTTLS , STREAMING, VERSION
-      ##AUTHINFO USER only if session is secured AUTHINFO SASL first
+                     ##AUTHINFO USER only if session is secured AUTHINFO SASL first
     end
 
     def greet # http://tools.ietf.org/html/rfc3977#section-5.1.1
@@ -20,7 +20,7 @@ module Niouz
     def article(part, mid, pos)
       case
         when mid
-          article = @storage.article(mid)
+          article = Article.find_by_message_id(mid)
           if article.nil?
             r(430)
           else
@@ -55,15 +55,7 @@ module Niouz
 
 #http://tools.ietf.org/html/rfc3977#section-6.3.1
     def post(raw_article)
-
-      head = Niouz::Rfc822Parser.parse_header(raw_article)
-      if not head.has_key?('Message-ID')
-        raw_article = "Message-ID: #{@storage.gen_uid}\n" + raw_article
-      end
-      if not head.has_key?('Date')
-        raw_article = "Date: #{Time.now}\n" + raw_article
-      end
-      if @storage.create_article(raw_article)
+      if Article.create(:content => raw_article)
         r(240)
       else
         r(441)
@@ -76,7 +68,7 @@ module Niouz
       resp = []
       @storage.each_article do |article|
         if article.existed_at?(time) and article.matches_groups?(wildmat) and
-            @storage.groups_of(article).any? { |g| g.matches_distribs?(distribs) }
+            article.groups.any? { |g| g.matches_distribs?(distribs) }
           resp << dot_escape(article.mid)
         end
       end
@@ -88,8 +80,30 @@ module Niouz
 #end
 
 # http://tools.ietf.org/html/rfc3977#section-6.1.2
-#def listgroup
-#end
+    def listgroup(name)
+
+      if name
+        if Newsgroup.exist?(name)
+          @group = Newsgroup.find_by_name(name)
+        else
+          return r(411)
+        end
+      else
+        if @group.nil?
+          return r(412)
+        end
+      end
+      @article = @group.first
+      body=[]
+      @group.articles.each_index do |idx|
+        body << (idx+1).to_s
+      end
+      r(211, body, "%d %d %d %s" % [@group.size_estimation,
+                                    @group.first,
+                                    @group.last,
+                                    @group.name]) # FIXME: sync
+
+    end
 
 #http://tools.ietf.org/html/rfc3977#section-8.3
 #def over
@@ -98,14 +112,21 @@ module Niouz
 #http://tools.ietf.org/html/rfc3977#section-7.6.1
     def list
       resp =[]
-      @storage.each_group { |group| resp << group.metadata }
+      Newsgroup.each do |group|
+        resp << group.metadata
+      end
       r(215, resp)
+    end
+
+    #http://tools.ietf.org/html/rfc3977#section-7.6.3
+    def list_active
+      list
     end
 
 #http://tools.ietf.org/html/rfc3977#section-7.6.6
     def list_newsgroups
       resp =[]
-      @storage.each_group { |group| resp << "#{group.name} #{group.description.gsub(/\n/, "-")}" }
+      Newsgroup.each { |group| resp << "#{group.name} #{group.description.gsub(/\n/, "-")}" }
       r(215, resp)
     end
 
@@ -150,7 +171,7 @@ module Niouz
 #http://tools.ietf.org/html/rfc3977 #section-7.3
     def newgroups(time, distribs)
       resp= []
-      @storage.each_group do |group|
+      Newsgroup.each do |group|
         resp << group.metadata if group.existed_at?(time) and group.matches_distribs?(distribs)
       end
       r(231, resp)
@@ -194,8 +215,8 @@ module Niouz
 
 #http://tools.ietf.org/html/rfc3977#section-6.1.1
     def group(name)
-      if @storage.has_group?(name)
-        @group = @storage.group(name)
+      if Newsgroup.exist?(name)
+        @group = Newsgroup.find_by_name(name)
         @article = @group.first
         r(211, nil, "%d %d %d %s" % [@group.size_estimation,
                                      @group.first,

@@ -33,10 +33,12 @@ module Niouz
               @session.help
             when /^LIST$/i
               @session.list
+            when /^LISTGROUP((\s+)(.+))?$/i
+              @session.listgroup($3)
             when /^LIST\s+OVERVIEW\.FMT$/i
               @session.list_overview
             when /^LIST\s+ACTIVE$/i
-              @session.list_overview
+              @session.list_active
             when /^LIST\s+NEWSGROUPS$/i
               @session.list_newsgroups
             when /^XOVER(\s+\d+)?(-)?(\d+)?$/i

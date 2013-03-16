@@ -10,68 +10,72 @@ module Niouz
     # [+name+] the name of the Newsgroup (e.g. "comp.lang.ruby").
     # [+created+] the Time the newsgroup was created (posted).
     # [+description+] a short description of the newsgroup subject.
-    def initialize(name, creation, description)
-      @name, @creation, @description = name, creation, description
-      @articles = Array.new
-      @first, @last = 0, 0
-      @lock = Mutex.new
+    include Model
+
+    attr_accessor :name, :description, :date_created
+
+    def self.find_by_name(name)
+      storage.by_name(name)
     end
 
-    attr_reader :name, :description
-
-    def sync
-      return @lock.synchronize { yield }
+    def self.exist?(name)
+      !find_by_name(name).nil?
     end
 
-    private :sync
+    def self.each
+      storage.all.each do |grp|
+        yield grp
+      end
+    end
 
     # Returns the index of the first article (lowest numbered) in this
     # group. Note that articles are indexed starting from 1, and a
     # return value of 0 means the newsgroup is empty.
     def first
-      return sync { @first }
+      return sync { i_first }
     end
 
     # Returns the index of the last article (highest numbered) in this
     # group. Note that articles are indexed starting from 1, and a
     # return value of 0 means the newsgroup is empty.
     def last
-      return sync { @last }
+      return sync { i_last }
     end
 
     # Returns a string describing the state of this newsgroup,
     # as expected by the +LIST+ and +NEWSGROUPS+ commands.
     def metadata
-      return sync { "#@name #@last #@first y" }
+      return sync { "#{name} #{i_last} #{i_first} y" }
     end
 
     # Tests whether this Newsgroup already existed at the given time.
     def existed_at?(aTime)
-      return @creation >= aTime
+      return date_created >= aTime
     end
 
     # Returns an Article by number.
     def [](nb)
-      return sync { @articles[nb - 1] }
+      return sync { articles[nb - 1] }
     end
 
     # Adds a new Article to this newsgroup.
     def add(article)
       sync {
-        @articles << article
-        @first = 1
-        @last += 1
+        articles << article
+        @i_first = 1
+        @i_last = (@i_last || 0 ) + 1
       }
+      #puts "adding to #{self.name}: #{i_first} #{i_last} #{article.id} <#{article.mid}>"
     end
 
     # Tests whether this newsgroup has an article numbered +nb+.
     def has_article?(nb)
-      return sync { not @articles[nb - 1].nil? }
+      return sync { not articles[nb - 1].nil? }
     end
 
     # Returns an estimation of the number of articles in this newsgroup.
     def size_estimation
-      return sync { @last - @first + 1 }
+      return sync { i_last - i_first + 1 }
     end
 
     # Returns the smallest valid article number strictly superior to
@@ -79,11 +83,11 @@ module Niouz
     def next_article(from)
       sync {
         current = from + 1
-        while current <= @last
-          break if @articles[current - 1]
+        while current <= i_last
+          break if articles[current - 1]
           current += 1
         end
-        (current > @last) ? nil : current
+        (current > i_last) ? nil : current
       }
     end
 
@@ -92,11 +96,11 @@ module Niouz
     def previous_article(from)
       sync {
         current = from - 1
-        while current >= @first
-          break if @articles[current - 1]
+        while current >= i_first
+          break if articles[current - 1]
           current -= 1
         end
-        (current < @first) ? nil : current
+        (current < i_first) ? nil : current
       }
     end
 
@@ -110,5 +114,32 @@ module Niouz
         return false
       end
     end
+
+    def articles
+      @articles ||= []
+    end
+
+    private
+    def sync
+      return lock.synchronize { yield }
+    end
+
+    attr_writer :i_first
+
+    def i_first
+      @i_first ||= 0
+    end
+
+    attr_writer :i_last
+
+    def i_last
+      @i_last ||= 0
+    end
+
+    def lock
+      @lock ||= Mutex.new
+    end
+
+
   end
 end

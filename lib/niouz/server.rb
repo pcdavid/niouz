@@ -52,7 +52,7 @@ module Niouz
           rescue Interrupt
             raise
           rescue Exception => err
-            #TODO: send some error code
+            @socket.write("500 internal error (exception)\r\n")
             @logger.error("Exception: #{err.message}\n#{err.backtrace.join("\n")}")
           end
         end

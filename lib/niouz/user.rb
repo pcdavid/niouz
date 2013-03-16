@@ -1,18 +1,6 @@
 module Niouz
   class User
-    def initialize(atts)
-      atts.each_pair do |key, value|
-        self.send("#{key}=", value)
-      end
-    end
-
-    def self.storage
-      @storage
-    end
-
-    def self.storage=(obj)
-      @storage=obj
-    end
+    include Model
 
     attr_accessor :name, :username, :email, :password, :guest
     alias guest? guest
@@ -36,9 +24,6 @@ module Niouz
       @guest ||= new(:username => 'guest', :guest => true)
     end
 
-    private
-    def storage
-      self.class.storage
-    end
+
   end
 end
