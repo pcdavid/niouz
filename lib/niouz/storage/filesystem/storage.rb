@@ -19,31 +19,29 @@ module Niouz
         def load_users
           users_filename=File.join(@dir, 'users')
           if File.exist?(users_filename)
-            UserFile.load(users_filename)
             @logger.info("[SERVER] found user file authentication enabled")
+          else
+            users_filename=nil
           end
-          User.storage=UserFile
-
+          User.storage=UserFile.init(users_filename)
         end
 
         # Parses the newsgroups description file.
         def load_groups
           groups_filename=File.open(File.join(@dir, 'newsgroups'))
           if File.exist?(groups_filename)
-            GroupFile.load(groups_filename)
+            nf=NewsgroupFile.init(groups_filename)
             @logger.debug("[SERVER] newsgroup file found")
           else
             @logger.error("[SERVER] newsgroup file not found")
             raise "newsgroup file not found"
           end
-          Newsgroup.storage=GroupFile
+          Newsgroup.storage=nf
         end
 
         def load_articles
           groups_filename=File.open(@dir)
-          ArticleFile.load(groups_filename)
-
-          Article.storage=ArticleFile
+          Article.storage=ArticleFile.init(groups_filename)
         end
       end
     end

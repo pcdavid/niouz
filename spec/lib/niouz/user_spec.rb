@@ -7,8 +7,9 @@ describe Niouz::User do
 
   }
   let(:user_storage) {
-    Niouz::Storage::Filesystem::UserFile.read(input)
-    Niouz::User.storage=Niouz::Storage::Filesystem::UserFile
+
+    Niouz::User.storage=Niouz::Storage::Filesystem::UserFile.new
+    Niouz::User.storage.read(input)
     Niouz::User.storage
   }
   before do
