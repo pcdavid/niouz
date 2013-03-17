@@ -41,25 +41,10 @@ module Niouz
     end
 
     def self.create_from_content(content)
-      fix_content(content)
-      article=new(:content => content) #article does not store the content!
+      news = Niouz::Rfc822Parser.new(content,true)
+      article=new(:content => news.content) #article does not store the content!
       storage.save(article, content)
       article
-    end
-
-
-
-    def self.fix_content(content)
-      #fix content
-      head = Niouz::Rfc822Parser.parse_header(content)
-      if not head.has_key?('Message-ID')
-        uid="<" + MD5.hexdigest(Time.now.to_s) + "@" + Socket.gethostname + ">"
-        content = "Message-ID: #{uid}\n" + content
-      end
-      if not head.has_key?('Date')
-        content = "Date: #{Time.now}\n" + content
-      end
-      content
     end
 
     def groups
@@ -84,22 +69,11 @@ module Niouz
 
     #when content is set we don't store it, just extract the stuff we need
     def content=(_content)
-      headers=Niouz::Rfc822Parser.parse_header(_content)
-      headers['Bytes'] ||= _content.size.to_s
-      headers['Lines'] ||= _content.split("\n").size.to_s
-
-      mid=headers['Message-ID']
-      if mid =~ /<([^>]+)>/
-        self.message_id= $1
-      else
-        self.message_id = nil
-      end
-
-      self.newsgroup_names = headers['Newsgroups'].split(/\s*,\s*/)
-      self.date = Niouz::Rfc822Parser.parse_date(headers['Date'])
-      self.overview= OVERVIEW_FMT.collect do |h|
-        headers[h] ? headers[h].gsub(/(\r\n|\n\r|\n|\t)/, ' ') : nil
-      end.join("\t")
+      news=Niouz::Rfc822Parser.new(_content)
+      self.message_id= news.message_id
+      self.newsgroup_names = news.newsgroup_names
+      self.date = news.date
+      self.overview= news.to_overview(OVERVIEW_FMT)
     end
 
     # Tests whether this Article already existed at the given time.
@@ -110,24 +84,15 @@ module Niouz
     # Returns the head of the article, i.e. the content of the
     # associated file up to the first empty line.
     def head
-      header = ''
-      File.open(filename).each_line do |line|
-        break if line.chomp.empty?
-        header << line
-      end
-      return header
+      news=Niouz::Rfc822Parser.new(content)
+      news.head
     end
 
     # Returns the body of the article, i.e. the content of the
     # associated file starting from the first empty line.
     def body
-      lines = ''
-      in_head = true
-      File.open(filename).each_line do |line|
-        in_head = false if in_head and line.chomp.empty?
-        lines << line unless in_head
-      end
-      return lines
+      news=Niouz::Rfc822Parser.new(content)
+      news.body
     end
 
     # Returns the full content of the article, head and body. This is

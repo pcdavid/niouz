@@ -232,5 +232,42 @@ module Niouz
       r(205)
     end
 
+
+    private
+
+    def move_article_pointer(direction)
+      if @group.nil?
+        r(412)
+      elsif @article.nil?
+        r(420)
+      else
+        # HACK: depends on method names
+        article = @group.send((direction.to_s + '_article').intern, @article)
+        if article
+          @article = article
+          mid = @group[@article].mid
+          r(223, nil, "#@article #{mid} article retrieved: request text separately")
+        else
+          r(422, nil, "no #{direction} article in this newsgroup")
+        end
+      end
+    end
+
+    def send_article_part(article, nb, part)
+      code, method = case part
+                       when /ARTICLE/i then
+                         ['220', :content]
+                       when /HEAD/i then
+                         ['221', :head]
+                       when /BODY/i then
+                         ['222', :body]
+                       when /STAT/i then
+                         ['223', nil]
+                     end
+      resp = ""
+      resp << encodelong(article.send(method)) if method
+      r(code, resp, "#{code} #{nb} #{article.mid} article retrieved")
+    end
+
   end
 end
