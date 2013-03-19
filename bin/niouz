@@ -17,6 +17,7 @@ options = OpenStruct.new
 options.port = Niouz::NNTPServer::DEFAULT_PORT
 options.root = Dir.pwd
 options.backend='file'
+options.loglevel='info'
 
 OptionParser.new do |opts|
   opts.banner = "Usage: #$0 [options]"
@@ -36,6 +37,11 @@ OptionParser.new do |opts|
     options.backend = backend
   end
 
+  opts.on('-l', '--log [debug|info|warn|error]', String,
+          "The log level (#{options.loglevel})") do |level|
+    options.loglevel = level
+  end
+
   opts.on_tail('-h', '--help', 'Show this message') do
     puts opts
     exit
@@ -43,8 +49,15 @@ OptionParser.new do |opts|
 
 end.parse!
 
-
+level={'debug' => Logger::DEBUG,
+       'info' => Logger::INFO,
+       'warn' => Logger::WARN,
+       'error' => Logger::ERROR,
+}[options.loglevel.downcase]
 logger=Logger.new($stderr)
+logger.info("[SERVER] loglevel #{options.loglevel.downcase}")
+logger.level = level || Logger::INFO
+
 server = Niouz::NNTPServer.new(options.port, GServer::DEFAULT_HOST, logger)
 
 case options.backend
