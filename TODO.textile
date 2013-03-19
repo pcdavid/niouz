@@ -1,0 +1,8 @@
+Lots:
+ * fix tests,  more tests
+ * document
+ * implement authorization logic
+ * config file support
+ * authorization should be configurable
+ * implement command messages (cancelation,...)
+ * switch to eventmachine
