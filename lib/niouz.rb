@@ -38,5 +38,3 @@ require 'niouz/models/user'
 require 'niouz/models/article'
 require 'niouz/models/newsgroup'
 
-#require 'niouz/storage/filesystem'
-require 'niouz/storage/active_record'
