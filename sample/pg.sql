@@ -40,3 +40,5 @@ CREATE TABLE articles_newsgroups(
 CREATE UNIQUE INDEX index_articles_newsgroups_ids ON articles_newsgroups(article_id,newsgroup_id);
 CREATE UNIQUE INDEX index_articles_newsgroups_pos ON articles_newsgroups(newsgroup_id,pos);
 
+ALTER TABLE articles_newsgroups ADD CONSTRAINT fk_articles_newsgroups_article_id FOREIGN KEY (article_id) REFERENCES articles(id);
+ALTER TABLE articles_newsgroups ADD CONSTRAINT fk_articles_newsgroups_newsgroup_id FOREIGN KEY (newsgroup_id) REFERENCES newsgroups(id);
