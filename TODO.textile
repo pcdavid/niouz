@@ -6,3 +6,5 @@ Lots:
  * authorization should be configurable
  * implement command messages (cancelation,...)
  * switch to eventmachine
+ * message bus if sth happened (esp. a article was posted/canceled)
+
