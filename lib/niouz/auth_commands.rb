@@ -14,7 +14,7 @@ module Niouz
 
     def authinfo_pass(password)
       if @username_try
-        if User.auth(@username_try, password)
+        if @storage.users.auth(@username_try, password)
           @user=@username_try
           r(281)
         else
@@ -28,7 +28,7 @@ module Niouz
 
     private
     def user
-      @user ||= User.guest
+      @user ||= @storage.users.guest
     end
 
     def authenticated?

@@ -42,7 +42,13 @@ module Niouz
             when /^LIST\s+NEWSGROUPS$/i
               @session.list_newsgroups
             when /^XOVER(\s+\d+)?(-)?(\d+)?$/i
-              @session.xover($1, $2, $3)
+              from = ($1 ? $1.to_i : nil)
+              if $2
+                to = ($3 ? $3.to_i : :end)
+              else
+                to = from
+              end
+              @session.xover(from,to)
             when /^NEWGROUPS\s+(\d{6})\s+(\d{6})(\s+GMT)?(\s+<.+>)?$/i
               time = read_time($1, $2, $3)
               distribs = read_distribs($4)

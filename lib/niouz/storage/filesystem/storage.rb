@@ -15,6 +15,7 @@ module Niouz
           load_articles
         end
 
+        attr_accessor :users, :articles, :newsgroups
 
         def load_users
           users_filename=File.join(@dir, 'users')
@@ -24,6 +25,7 @@ module Niouz
             users_filename=nil
           end
           User.storage=UserFile.init(users_filename)
+          self.users =  User
         end
 
         # Parses the newsgroups description file.
@@ -37,11 +39,13 @@ module Niouz
             raise "newsgroup file not found"
           end
           Newsgroup.storage=nf
+          self.newsgroups=Newsgroup
         end
 
         def load_articles
           groups_filename=File.open(@dir)
           Article.storage=ArticleFile.init(groups_filename)
+          self.articles=Article
         end
       end
     end

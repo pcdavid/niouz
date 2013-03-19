@@ -20,7 +20,7 @@ module Niouz
     def article(part, mid, pos)
       case
         when mid
-          article = Article.find_by_message_id(mid)
+          article = @storage.articles.find_by_message_id(mid)
           if article.nil?
             r(430)
           else
@@ -30,9 +30,9 @@ module Niouz
           if @group.nil?
             r(412)
           else
-            if @group.has_article?(pos)
-              @article = @group[pos]
-              send_article_part(@article, pos, part)
+            if art=@group.article_by_pos(pos)
+              @article = pos
+              send_article_part(art, pos, part)
             else
               r(423)
             end
@@ -44,7 +44,8 @@ module Niouz
             when @article.nil?
               r(420)
             else
-              send_article_part(@article, nil, part)
+              art=@group.article_by_pos(@article)
+              send_article_part(art, nil, part)
           end
       end
     end
@@ -55,7 +56,7 @@ module Niouz
 
 #http://tools.ietf.org/html/rfc3977#section-6.3.1
     def post(raw_article)
-      if Article.create_from_content(raw_article)
+      if @storage.articles.create_from_content(raw_article)
         r(240)
       else
         r(441)
@@ -65,12 +66,8 @@ module Niouz
 
 #http://tools.ietf.org/html/rfc3977#section-7.4
     def newnews(wildmat, time, distribs)
-      resp = []
-      @storage.each_article do |article|
-        if article.existed_at?(time) and article.matches_groups?(wildmat) and
-            article.groups.any? { |g| g.matches_distribs?(distribs) }
-          resp << dot_escape(article.mid)
-        end
+      resp=@storage.articles.newnews(wildmat, time, distribs).map do |article|
+        dot_escape(article.message_id)
       end
       r(230, resp)
     end
@@ -81,10 +78,9 @@ module Niouz
 
 # http://tools.ietf.org/html/rfc3977#section-6.1.2
     def listgroup(name)
-
       if name
-        if Newsgroup.exist?(name)
-          @group = Newsgroup.find_by_name(name)
+        if grp = @storage.newsgroups.find_by_name(name)
+          @group = grp
         else
           return r(411)
         end
@@ -93,14 +89,11 @@ module Niouz
           return r(412)
         end
       end
-      @article = @group.first
-      body=[]
-      @group.articles.each_index do |idx|
-        body << (idx+1).to_s
-      end
+      @article = @group.min_pos
+      body=@group.article_pos
       r(211, body, "%d %d %d %s" % [@group.size_estimation,
-                                    @group.first,
-                                    @group.last,
+                                    @group.min_pos,
+                                    @group.max_pos,
                                     @group.name]) # FIXME: sync
 
     end
@@ -111,9 +104,8 @@ module Niouz
 
 #http://tools.ietf.org/html/rfc3977#section-7.6.1
     def list
-      resp =[]
-      Newsgroup.each do |group|
-        resp << group.metadata
+      resp=@storage.newsgroups.all.map do |group|
+        group.metadata
       end
       r(215, resp)
     end
@@ -126,7 +118,7 @@ module Niouz
 #http://tools.ietf.org/html/rfc3977#section-7.6.6
     def list_newsgroups
       resp =[]
-      Newsgroup.each { |group| resp << "#{group.name} #{group.description.gsub(/\n/, "-")}" }
+      @storage.newsgroups.each { |group| resp << "#{group.name} #{group.description.gsub(/\n/, "-")}" }
       r(215, resp)
     end
 
@@ -146,33 +138,32 @@ module Niouz
 #ACTIVE.TIMES,DISTRIB.PATS,HEADERS,NEWSGROUPS
 
 #from, to
-    def xover(one, two, three)
+    def xover(from, to)
       if @group.nil?
         r(412)
       else
-        if not one then
-          articles = [@article]
-        elsif not two then
-          articles = [one.to_i]
-        else
-          last = (three ? three.to_i : @group.last)
-          articles = (one.to_i .. last).select { |n| @group.has_article?(n) }
+        if !from then #XOVER
+          range = [@article, @article] #just the current article
+          return r(420) unless @article
+        elsif to==:end then # XOVER 2-
+          range = [from, @group.max_pos]
+        else #XOVER 2 or XOVER 2-4
+          range = [from, to]
         end
-        if articles.compact.empty? or articles == [0]
-          r(420)
-        else
-          r(224, articles.map do |nb|
-            "#{nb}\t#{@group[nb].overview}"
-          end)
+        articles=@group.articles_in_range(range[0], range[1])
+        body=[]
+        articles.each_pair do |pos, article|
+          body << "#{pos}\t#{article.overview}"
         end
+        r(224, body)
       end
     end
 
+
 #http://tools.ietf.org/html/rfc3977 #section-7.3
     def newgroups(time, distribs)
-      resp= []
-      Newsgroup.each do |group|
-        resp << group.metadata if group.existed_at?(time) and group.matches_distribs?(distribs)
+      resp=@storage.newsgroups.newgroups(time, distribs).map do |group|
+        group.metadata
       end
       r(231, resp)
     end
@@ -215,12 +206,13 @@ module Niouz
 
 #http://tools.ietf.org/html/rfc3977#section-6.1.1
     def group(name)
-      if Newsgroup.exist?(name)
-        @group = Newsgroup.find_by_name(name)
-        @article = @group.first
+      if grp = @storage.newsgroups.find_by_name(name)
+        @group = grp
+        @group.article_by_pos(@group.min_pos)
+        @article=@group.default_pos
         r(211, nil, "%d %d %d %s" % [@group.size_estimation,
-                                     @group.first,
-                                     @group.last,
+                                     @group.min_pos,
+                                     @group.max_pos,
                                      @group.name]) # FIXME: sync
       else
         r(411)
@@ -245,7 +237,7 @@ module Niouz
         article = @group.send((direction.to_s + '_article').intern, @article)
         if article
           @article = article
-          mid = @group[@article].mid
+          mid = @group.article_by_pos(@article).mid
           r(223, nil, "#@article #{mid} article retrieved: request text separately")
         else
           r(422, nil, "no #{direction} article in this newsgroup")

@@ -4,13 +4,15 @@ module Niouz
       #reads and caches filesystem db
       class ArticleFile
         def self.init(dirname)
-          new(dirname)
+          af=new(dirname)
+          af.read
+          af
         end
 
         def initialize(dirname)
           @last_file_id = 0
           @models = {}
-          @lock = Mutex.new
+          @lock = Mutex.new # should we sync this lock with the article lock?
           @article_dir = File.join(dirname, 'articles')
         end
 
@@ -28,6 +30,10 @@ module Niouz
         #returns hash of users by username
         def by_message_id(name)
           @models[name]
+        end
+
+        def all
+          @models.values
         end
 
         def save(article, content)

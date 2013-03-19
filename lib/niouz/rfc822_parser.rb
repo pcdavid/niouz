@@ -1,3 +1,4 @@
+require 'stringio'
 module Niouz
   class Rfc822Parser
     class ParsingError < StandardError;
