@@ -11,7 +11,7 @@ module Niouz
 
     def initialize(port = DEFAULT_PORT, host = GServer::DEFAULT_HOST,logger = Logger.new($stderr))
       @logger=logger
-      @logger.info("[SERVER] starting")
+      @logger.info("[SERVER] starting, binding to #{host}")
       super(port, host, Float::MAX, nil, true)
     end
 

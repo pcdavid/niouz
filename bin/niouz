@@ -18,6 +18,7 @@ options.port = Niouz::NNTPServer::DEFAULT_PORT
 options.root = Dir.pwd
 options.backend='file'
 options.loglevel='info'
+options.interface='127.0.0.1'
 
 OptionParser.new do |opts|
   opts.banner = "Usage: #$0 [options]"
@@ -42,6 +43,11 @@ OptionParser.new do |opts|
     options.loglevel = level
   end
 
+  opts.on('-i', '--interface [INTERFACE]', String,
+            "The interface to bind to (#{options.interface})") do |iface|
+      options.interface = iface
+  end
+
   opts.on_tail('-h', '--help', 'Show this message') do
     puts opts
     exit
@@ -58,7 +64,7 @@ logger=Logger.new($stderr)
 logger.info("[SERVER] loglevel #{options.loglevel.downcase}")
 logger.level = level || Logger::INFO
 
-server = Niouz::NNTPServer.new(options.port, GServer::DEFAULT_HOST, logger)
+server = Niouz::NNTPServer.new(options.port, options.interface, logger)
 
 case options.backend
   when 'file'
