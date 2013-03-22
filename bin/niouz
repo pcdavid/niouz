@@ -16,6 +16,9 @@ require 'ostruct'
 options = OpenStruct.new
 options.port = Niouz::NNTPServer::DEFAULT_PORT
 options.root = Dir.pwd
+options.backend='file'
+options.loglevel='info'
+options.interface='127.0.0.1'
 
 OptionParser.new do |opts|
   opts.banner = "Usage: #$0 [options]"
@@ -30,6 +33,21 @@ OptionParser.new do |opts|
     options.port = port
   end
 
+  opts.on('-b', '--backend [file|db]', String,
+          "Use the specified backend (#{options.backend})") do |backend|
+    options.backend = backend
+  end
+
+  opts.on('-l', '--log [debug|info|warn|error]', String,
+          "The log level (#{options.loglevel})") do |level|
+    options.loglevel = level
+  end
+
+  opts.on('-i', '--interface [INTERFACE]', String,
+            "The interface to bind to (#{options.interface})") do |iface|
+      options.interface = iface
+  end
+
   opts.on_tail('-h', '--help', 'Show this message') do
     puts opts
     exit
@@ -37,9 +55,31 @@ OptionParser.new do |opts|
 
 end.parse!
 
-Dir.chdir(options.root) do
-  server = Niouz::NNTPServer.new(options.port)
-  server.store = Niouz::Storage.new(Dir.pwd)
-  server.start(-1)
-  server.join
+level={'debug' => Logger::DEBUG,
+       'info' => Logger::INFO,
+       'warn' => Logger::WARN,
+       'error' => Logger::ERROR,
+}[options.loglevel.downcase]
+logger=Logger.new($stderr)
+logger.info("[SERVER] loglevel #{options.loglevel.downcase}")
+logger.level = level || Logger::INFO
+
+server = Niouz::NNTPServer.new(options.port, options.interface, logger)
+
+case options.backend
+  when 'file'
+    require 'niouz/storage/filesystem'
+    server.store = Niouz::Storage::Filesystem::Storage.init(logger, :dir => options.root)
+  when 'db'
+    require 'niouz/storage/active_record'
+    server.store = Niouz::Storage::ActiveRecord::Storage.init(logger,
+                                                              :dir => options.root,
+                                                              :config => File.join(options.root, 'database.yml'))
+  else
+    logger.error("No such backend '#{options.backend}'")
+    exit 1
 end
+
+server.start(-1)
+server.join
+
