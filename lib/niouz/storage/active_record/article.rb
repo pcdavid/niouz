@@ -18,6 +18,14 @@ module Niouz
       # once created. Thread-safe.
       class Article < ::ActiveRecord::Base
 
+        def self.dir=(base_dir)
+          @dir=base_dir
+        end
+
+        def self.dir
+          @dir
+        end
+
         include Models::Article
         belongs_to :user
         has_many :articles_newsgroups
@@ -61,7 +69,7 @@ module Niouz
         end
 
         def filename
-          "articles/#{id}"
+          File.join(self.class.dir,"articles/#{id}")
         end
       end
     end

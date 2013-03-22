@@ -20,6 +20,7 @@ module Niouz
           self.users = User
           self.newsgroups=Newsgroup
           self.articles=Article
+          Article.dir=@dir
           self.article_newsgroups=ArticlesNewsgroup
         end
 
