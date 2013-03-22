@@ -7,4 +7,4 @@ Lots:
  * implement command messages (cancelation,...)
  * switch to eventmachine
  * message bus if sth happened (esp. a article was posted/canceled)
-
+ * active record backend as separate gem
