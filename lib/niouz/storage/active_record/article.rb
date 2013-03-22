@@ -69,7 +69,8 @@ module Niouz
         end
 
         def filename
-          File.join(self.class.dir,"articles/#{id}")
+          fname_id = "%06d" % [id]
+          File.join(self.class.dir,"articles/#{fname_id}")
         end
       end
     end
