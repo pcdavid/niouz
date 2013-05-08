@@ -1,0 +1,9 @@
+connection:
+  adapter: postgresql
+  encoding: unicode
+  database: niouz
+  pool: 5
+  host: localhost
+  username: the_user
+  password: the_password
+
